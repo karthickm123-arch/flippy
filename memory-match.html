@@ -2,8 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Flippy! — Memory Match</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Flippy — Memory Match</title>
+
+  <!-- iOS PWA / Add to Home Screen -->
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Flippy"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="theme-color" content="#0f0e17"/>
+
+  <!-- App icon (generated inline as canvas → data URL via JS, injected below) -->
+  <link id="apple-touch-icon" rel="apple-touch-icon" href=""/>
+  <link id="favicon" rel="icon" type="image/png" href=""/>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -26,11 +37,17 @@
       font-family: 'Nunito', sans-serif;
       background: var(--bg);
       min-height: 100vh;
+      min-height: -webkit-fill-available;
       display: flex;
       flex-direction: column;
       align-items: center;
       overflow-x: hidden;
       position: relative;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    @media (display-mode: standalone) {
+      body { padding-top: calc(16px + env(safe-area-inset-top)); }
     }
 
     body::before, body::after {
@@ -520,6 +537,55 @@
   }
 
   startGame();
+
+  // Generate app icon as canvas and inject as apple-touch-icon
+  (function generateIcon() {
+    const size = 512;
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d');
+
+    // Background gradient
+    const bg = ctx.createLinearGradient(0, 0, size, size);
+    bg.addColorStop(0, '#1a1828');
+    bg.addColorStop(1, '#0f0e17');
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.roundRect(0, 0, size, size, size * 0.22);
+    ctx.fill();
+
+    // Card shapes
+    const cards = [
+      { x: 60,  y: 130, w: 160, h: 200, color: '#ff6b6b', emoji: '🦊' },
+      { x: 290, y: 130, w: 160, h: 200, color: '#4d96ff', emoji: '🚀' },
+      { x: 175, y: 80,  w: 160, h: 200, color: '#c77dff', emoji: '⭐' },
+    ];
+    cards.forEach(({ x, y, w, h, color, emoji }) => {
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.4)';
+      ctx.shadowBlur = 20;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, 22);
+      ctx.fill();
+      ctx.restore();
+      ctx.font = `${w * 0.52}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(emoji, x + w / 2, y + h / 2 + 6);
+    });
+
+    // Title
+    ctx.font = 'bold 72px sans-serif';
+    ctx.fillStyle = '#ffd93d';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('Flippy', size / 2, size - 60);
+
+    const dataURL = c.toDataURL('image/png');
+    document.getElementById('apple-touch-icon').href = dataURL;
+    document.getElementById('favicon').href = dataURL;
+  })();
 </script>
 </body>
 </html>
